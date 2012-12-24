@@ -3,7 +3,7 @@ module FFMPEG
     def initialize(movie, raw_options = {}, options = {})
       @movie = movie
       @raw_options = raw_options
-      merge!(options)
+      @original_transcoding_options = options
       generate_raw_options!
     end
 
@@ -14,19 +14,20 @@ module FFMPEG
       add_options_for_aspect_ratio if preserve_aspect_ratio?
     end
     
+    AUTOROTATION_FILTERS = {
+      90  => 'transpose=1',
+      180 => 'hflip,vflip',
+      270 => 'transpose=2'
+    }
+    
     def add_options_for_autorotate
-      # remove the rotation information on the video stream so rotation-aware players don't rotate twice
-      self[:metadata] = 's:v:0 rotate=0'
-      filters = {
-        90  => 'transpose=1',
-        180 => 'hflip,vflip',
-        270 => 'transpose=2'
-      }
-      self[:video_filter] = filters[@movie.rotation]
+      self[:video_filter] = AUTOROTATION_FILTERS[@movie.rotation]
+      # also remove the rotation information from the video stream so rotation-aware players don't rotate twice
+      self[:metadata]     = 's:v:0 rotate=0'
     end
 
     def preserve_aspect_ratio?
-      @movie.calculated_aspect_ratio && [:width, :height].include?(self[:preserve_aspect_ratio])
+      @movie.calculated_aspect_ratio && [:width, :height].include?(@original_transcoding_options[:preserve_aspect_ratio])
     end
 
     # Scaling with autorotation 
@@ -50,11 +51,11 @@ module FFMPEG
     # Required Encoding (ffmpeg version == 1.0, rotates before scaling, this implementation): resolution => 660x880
     #
     def add_options_for_aspect_ratio
-      side_to_preserve = self[:preserve_aspect_ratio] # the value can be either :width or :height
+      side_to_preserve = @original_transcoding_options[:preserve_aspect_ratio] # the value can be either :width or :height
       new_size = @raw_options.send(side_to_preserve)
       side_to_preserve = invert_side(side_to_preserve) if movie_changes_orientation?
 
-      if self[:enlarge] == false
+      if @original_transcoding_options[:enlarge] == false
         original_size = @movie.send(side_to_preserve)
         new_size = original_size if original_size < new_size
       end
@@ -90,7 +91,7 @@ module FFMPEG
     
     # are we autorotating the movie?
     def autorotating?
-      self[:autorotate] && @movie.rotation && @movie.rotation != 0
+      @original_transcoding_options[:autorotate] && @movie.rotation && @movie.rotation != 0
     end
     
     # we need to know if orientation changes when we scale
