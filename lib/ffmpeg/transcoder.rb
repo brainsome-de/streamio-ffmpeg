@@ -40,18 +40,13 @@ module FFMPEG
     
     # these are the command line options that get passed to the ffmpeg shell call.
     def raw_options
-      options = {}
-      #
       # handle EncodingOptions
-      #
-      if @encoding_options.is_a?(String) || @encoding_options.is_a?(EncodingOptions)
-        options = @encoding_options
-      else @encoding_options.is_a?(Hash)
-        options = EncodingOptions.new(@encoding_options)
+      options = if @encoding_options.is_a?(String) || @encoding_options.is_a?(EncodingOptions)
+        @encoding_options
+      else
+        EncodingOptions.new(@encoding_options)
       end
-      #
       # handle TranscodingOptions
-      #
       # I believe transcoding_options can't have worked when @raw_options was a String ...
       if options.is_a?(Hash)
         options.merge!(TranscodingOptions.new(@movie, options, @transcoding_options))
