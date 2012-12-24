@@ -7,7 +7,7 @@ module FFMPEG
    
     describe "transcoding" do
       context "with aspect ratio preservation" do
-        it "should work on width (only TranscodingOptions)" do
+        it "should work on width" do
           transcoding_options = {:preserve_aspect_ratio => :width}
           encoding_options = EncodingOptions.new({:resolution => "320x240"})
           

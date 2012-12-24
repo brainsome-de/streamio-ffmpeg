@@ -100,13 +100,14 @@ module FFMPEG
           @options = {:resolution => "320x240"}
         end
         
+        # there's now a more direct spec for this in transcoding_options_spec; remove duplication some time
         it "should work on width" do
           special_options = {:preserve_aspect_ratio => :width}
 
           encoded = Transcoder.new(@movie, "#{tmp_path}/preserved_aspect.mp4", @options, special_options).run
           encoded.resolution.should == "320x180"
         end
-
+        
         it "should work on height" do
           special_options = {:preserve_aspect_ratio => :height}
         
