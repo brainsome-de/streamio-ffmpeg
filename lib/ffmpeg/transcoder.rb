@@ -1,18 +1,15 @@
 require 'open3'
 require 'shellwords'
-require 'ffmpeg/transcoders/autorotator'
-require 'ffmpeg/transcoders/scaler'
 
 module FFMPEG
-
-  # transcoder options:
-  # - preserve_aspect_ration: [:width|:height]
+  
+  #
+  # transcoding options:
+  # - preserve_aspect_ratio: [:width|:height]
   # - scale_and_enlarge: boolean, default: true 
   # - autorotate: boolean
+  #
   class Transcoder
-
-    include FFMPEG::Transcoders::Autorotator
-    include FFMPEG::Transcoders::Scaler
 
     @@timeout = 200
 
@@ -24,28 +21,48 @@ module FFMPEG
       @@timeout
     end
 
-    def initialize(movie, output_file, options = EncodingOptions.new, transcoder_options = {:enlarge => true})
+    def initialize(movie, output_file, encoding_options = EncodingOptions.new, transcoding_options = {:enlarge => true})
       @movie = movie
       @output_file = output_file
-      
-      if options.is_a?(String) || options.is_a?(EncodingOptions)
-        @raw_options = options
-      elsif options.is_a?(Hash)
-        @raw_options = EncodingOptions.new(options)
-      else
-        raise ArgumentError, "Unknown options format '#{options.class}', should be either EncodingOptions, Hash or String."
-      end
-      
-      @transcoder_options = transcoder_options
+      @encoding_options = encoding_options
+      validate_encoding_options!
+      @transcoding_options = transcoding_options
       @errors = []
-      
-      apply_transcoder_options
+    end
+
+    def validate_encoding_options!
+      valid_types = [EncodingOptions, Hash, String]
+      unless valid_types.any? { |type| @encoding_options.is_a?(type) }
+        msg = "Unknown encoding_options format '#{@encoding_options.class}', should be either #{valid_types.join(', ')}."
+        raise ArgumentError, msg
+      end
+    end
+    
+    # these are the command line options that get passed to the ffmpeg shell call.
+    def raw_options
+      options = {}
+      #
+      # handle EncodingOptions
+      #
+      if @encoding_options.is_a?(String) || @encoding_options.is_a?(EncodingOptions)
+        options = @encoding_options
+      else @encoding_options.is_a?(Hash)
+        options = EncodingOptions.new(@encoding_options)
+      end
+      #
+      # handle TranscodingOptions
+      #
+      # I believe transcoding_options can't have worked when @raw_options was a String ...
+      if options.is_a?(Hash)
+        options.merge!(TranscodingOptions.new(@movie, options, @transcoding_options))
+      end
+      options
     end
     
     # ffmpeg <  0.8: frame=  413 fps= 48 q=31.0 size=    2139kB time=16.52 bitrate=1060.6kbits/s
     # ffmpeg >= 0.8: frame= 4855 fps= 46 q=31.0 size=   45306kB time=00:02:42.28 bitrate=2287.0kbits/
     def run
-      command = "#{FFMPEG.ffmpeg_binary} -y -i #{Shellwords.escape(@movie.path)} #{@raw_options} #{Shellwords.escape(@output_file)}"
+      command = "#{FFMPEG.ffmpeg_binary} -y -i #{Shellwords.escape(@movie.path)} #{raw_options} #{Shellwords.escape(@output_file)}"
       FFMPEG.logger.info("Running transcoding...\n#{command}\n")
       output = ""
       last_output = nil
@@ -108,17 +125,12 @@ module FFMPEG
     
     private
 
-    def apply_transcoder_options
-      apply_autorotate
-      changes_orientation = changes_orientation?
-      apply_preserve_aspect_ratio(changes_orientation)
-    end
-
     def fix_encoding(output)
       output[/test/]
     rescue ArgumentError
       output.force_encoding("ISO-8859-1")
     end
+    
   end
 
 end

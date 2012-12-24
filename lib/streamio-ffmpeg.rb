@@ -9,6 +9,7 @@ require 'ffmpeg/movie'
 require 'ffmpeg/io_monkey'
 require 'ffmpeg/transcoder'
 require 'ffmpeg/encoding_options'
+require 'ffmpeg/transcoding_options'
 
 module FFMPEG
   # FFMPEG logs information about its progress when it's transcoding.

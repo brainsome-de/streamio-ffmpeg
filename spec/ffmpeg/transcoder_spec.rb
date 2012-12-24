@@ -20,7 +20,7 @@ module FFMPEG
       end
       
       it "should not accept anything else as options" do
-        lambda { Transcoder.new(movie, output_path, ["array?"]) }.should raise_error(ArgumentError, /Unknown options format/)
+        lambda { Transcoder.new(movie, output_path, ["array?"]) }.should raise_error(ArgumentError, /Unknown encoding_options format/)
       end
     end
     
@@ -266,19 +266,6 @@ module FFMPEG
           end
         end
       end
-    end
-    
-    context "the #even method" do
-      def evenize(number)
-        @movie = Movie.new("#{fixture_path}/movies/sideways movie.mov")
-        t = Transcoder.new(@movie, "#{tmp_path}/preserved_aspect.mp4")
-        t.send(:evenize, number)
-      end
-      it { evenize(2.2).should == 2 }
-      it { evenize(3.2).should == 4 }
-      it { evenize(0.2).should == 0 }
-      it { evenize(42).should == 42 }
-      it { evenize(43).should == 44 }
     end
   end
 end
