@@ -1,10 +1,30 @@
 module FFMPEG
   class EncodingOptions < Hash
+
     def initialize(options = {})
-      merge!(options)
+      validate_options!(options)
+      if options.is_a?(String)
+        # if options are given as a string, the object is pretty much disabled.
+        # we just pass it back in #to_s and don't do any work in here. 
+        # attempting to parse the string would require knowing all current 
+        # and future ffmpeg options, or a smart way to deal with unknown options.
+        @options_string = options
+      else
+        merge!(options)
+      end
+    end
+    
+    def validate_options!(options)
+      valid_types = [EncodingOptions, Hash, String]
+      unless valid_types.any? { |type| options.is_a?(type) }
+        msg = "Unknown encoding_options format '#{options.class}', should be either #{valid_types.join(', ')}."
+        raise ArgumentError, msg
+      end
     end
     
     def to_s
+      return @options_string if @options_string
+      
       params = collect do |key, value|
         send("convert_#{key}", value) if value && supports_option?(key)
       end

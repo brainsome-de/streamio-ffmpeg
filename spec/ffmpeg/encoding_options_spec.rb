@@ -2,6 +2,35 @@ require 'spec_helper.rb'
 
 module FFMPEG
   describe EncodingOptions do
+    
+    describe "Initializing an instance with" do
+      describe "valid arguments" do
+        it "any string" do
+          EncodingOptions.new("-hello world").to_s.should == "-hello world"
+        end
+        it "nothing" do
+          EncodingOptions.new.to_s.should == ""
+        end
+        it "a hash" do
+          EncodingOptions.new(:video_codec => "libx264").to_s.should == "-vcodec libx264"
+        end
+        it "an EncodingOptions instance" do
+          options = EncodingOptions.new(:video_codec => "libx264")
+          EncodingOptions.new(options).to_s.should == "-vcodec libx264"
+        end
+      end
+      describe "invalid arguments" do
+        it "false" do
+          proc = lambda { EncodingOptions.new(false) }
+          expect(&proc).to raise_error(ArgumentError, /Unknown encoding_options format/)
+        end
+        it "an array" do
+          proc = lambda { EncodingOptions.new(["array?"]) }
+          expect(&proc).to raise_error(ArgumentError, /Unknown encoding_options format/)
+        end
+      end
+    end
+    
     describe "ffmpeg arguments conversion" do
       it "should convert video codec" do
         EncodingOptions.new(:video_codec => "libx264").to_s.should == "-vcodec libx264"

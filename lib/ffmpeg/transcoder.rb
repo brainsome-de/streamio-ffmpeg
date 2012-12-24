@@ -24,28 +24,15 @@ module FFMPEG
     def initialize(movie, output_file, encoding_options = EncodingOptions.new, transcoding_options = {:enlarge => true})
       @movie = movie
       @output_file = output_file
-      @encoding_options = encoding_options
-      validate_encoding_options!
+      @encoding_options = EncodingOptions.new(encoding_options)
       @transcoding_options = transcoding_options
       @errors = []
     end
 
-    def validate_encoding_options!
-      valid_types = [EncodingOptions, Hash, String]
-      unless valid_types.any? { |type| @encoding_options.is_a?(type) }
-        msg = "Unknown encoding_options format '#{@encoding_options.class}', should be either #{valid_types.join(', ')}."
-        raise ArgumentError, msg
-      end
-    end
-    
     # these are the command line options that get passed to the ffmpeg shell call.
     def raw_options
       # handle EncodingOptions
-      options = if @encoding_options.is_a?(String) || @encoding_options.is_a?(EncodingOptions)
-        @encoding_options
-      else
-        EncodingOptions.new(@encoding_options)
-      end
+      options = @encoding_options
       # handle TranscodingOptions
       # I believe transcoding_options can't have worked when @raw_options was a String ...
       if options.is_a?(Hash)
