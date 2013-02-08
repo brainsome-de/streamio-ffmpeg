@@ -78,12 +78,12 @@ module FFMPEG
       side == :height ? :width : :height
     end
 
-    # input: WWWxHHH; output: HHH:WWW
+    # input: WWWxHHH; output: HHHxWWW
     def invert_resolution(resolution)
       resolution.split("x").reverse.join("x")
     end
     
-    # ffmpeg requires full, even numbers for its resolution string -- this method ensures that
+    # return full, even numbers to ffmpeg in the resolution string
     def evenize(number)
       number = number.ceil.even? ? number.ceil : number.floor
       number.odd? ? number += 1 : number # needed if new_height ended up with no decimals in the first place
